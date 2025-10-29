@@ -21,7 +21,12 @@
  zaporedja in vrne seznam vseh členov, dokler zaporedje ne doseže $1$.
 [*----------------------------------------------------------------------------*)
 
-let rec collatz _ = ()
+let rec collatz stevilo = 
+  match stevilo with
+  | 1 -> [1]
+  | n when n mod 2 = 0 -> n :: collatz  (n / 2)
+  | n -> n :: collatz (3 * n + 1)
+  
 
 let primer_ogrevanje_1 = collatz 1024
 (* val primer_ogrevanje_1 : int list =
@@ -47,12 +52,18 @@ let primer_ogrevanje_2 = collatz 27
  dano funkcijo in seznam vrne podseznam vseh elementov, ki so fiksne točke.
 [*----------------------------------------------------------------------------*)
 
-let fiksne_tocke _ _ = ()
+let fiksne_tocke funkcija sez =
+  let rec aux acc = 
+  function
+  | [] -> List.rev acc
+  | element :: elementi -> if funkcija element = element then aux (element :: acc) elementi else aux acc elementi
+  in aux [] sez
+
 
 let primer_ogrevanje_3 = fiksne_tocke (fun x -> x * x) [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10]
 (* val primer_ogrevanje_3 : int list = [0; 1] *)
 
-let primer_ogrevanje_4 = fiksne_tocke List.rev [[3]; [1; 4; 1]; [5; 9; 2; 6]; [5; 3; 5]; []; [8; 9; 7; 9; 3; 2; 3]]
+let primer_ogrevanje_4 = fiksne_tocke List.rev [[3]; [1; 4; 1]; [5; 9; 2; 6]; [5; 3; 5]; []; [1;2;1]; [8; 9; 7; 9; 3; 2; 3]]
 (* val primer_ogrevanje_4 : int list list = [[3]; [1; 4; 1]; [5; 3; 5]; []] *)
 
 (*----------------------------------------------------------------------------*
@@ -65,7 +76,12 @@ let primer_ogrevanje_4 = fiksne_tocke List.rev [[3]; [1; 4; 1]; [5; 9; 2; 6]; [5
  konec vstavi dano ločilo.
 [*----------------------------------------------------------------------------*)
 
-let sep_concat _ _ = ()
+let sep_concat locilo sez = 
+  let rec aux acc = function
+  | [] -> acc @ [locilo]
+  | [x] -> acc @ [locilo] @ x @ [locilo]
+  | x :: xi -> aux (acc @ [locilo] @ x) xi
+in aux [] sez
 
 let primer_ogrevanje_5 = sep_concat 42 [[1; 2; 3]; [4; 5]; []; [6]]
 (* val primer_ogrevanje_5 : int list = [42; 1; 2; 3; 42; 4; 5; 42; 42; 6; 42] *)
@@ -84,7 +100,11 @@ let primer_ogrevanje_6 = sep_concat 42 []
  čemer je zadnji podseznam lahko tudi krajši.
 [*----------------------------------------------------------------------------*)
 
-let partition _ _ = ()
+let partition k sez = 
+  let rec aux acc zacasno i = function
+  | [] -> if zacasno != [] then List.rev((List.rev zacasno) :: acc) else List.rev (acc)
+  | x :: xi -> if i = k then aux ((List.rev (x :: zacasno)) :: acc) [] 1 xi else aux acc (x :: zacasno) (i + 1) xi
+  in aux [] [] 1 sez
 
 let primer_ogrevanje_7 = partition 3 [1; 2; 3; 4; 5; 6; 7; 8; 9]
 (* val primer_ogrevanje_7 : int list list = [[1; 2; 3]; [4; 5; 6]; [7; 8; 9]] *)
@@ -121,50 +141,78 @@ type ('a, 'b) sum = In1 of 'a | In2 of 'b
  ### $A \times B \cong B \times A$
 [*----------------------------------------------------------------------------*)
 
-let phi1 _ = ()
-let psi1 _ = ()
+let phi1 (a, b) = (b, a)
+let psi1 (b, a) = (a, b)
 
 (*----------------------------------------------------------------------------*
  ### $A + B \cong B + A$
 [*----------------------------------------------------------------------------*)
 
-let phi2 _ = ()
-let psi2 _ = ()
+let phi2 (x : ('a, 'b) sum)=
+  match x with 
+  | In1 a -> In2 a
+  | In2 b -> In1 b
+let psi2 (x : ('b, 'a) sum)=
+  match x with 
+  | In1 b -> In2 b
+  | In2 a -> In1 a
 
 (*----------------------------------------------------------------------------*
  ### $A \times (B \times C) \cong (A \times B) \times C$
 [*----------------------------------------------------------------------------*)
 
-let phi3 _ = ()
-let psi3 _ = ()
+let phi3 (a,(b,c)) = ((a,b),c)
+let psi3 ((a,b),c) = (a,(b,c))
 
 (*----------------------------------------------------------------------------*
  ### $A + (B + C) \cong (A + B) + C$
 [*----------------------------------------------------------------------------*)
 
-let phi4 _ = ()
-let psi4 _ = ()
+let phi4 (x : ('a, ('b, 'c) sum) sum) = 
+  match x with
+  | In1 a -> In1 (In1 a)
+  | In2 (In1 b) -> In1 (In2 b)
+  | In2 (In2 c) -> In2 c
+let psi4 (x : (('a, 'b) sum, 'c) sum) = 
+  match x with
+  | In1 (In1 a) -> In1 a
+  | In1 (In2 b) -> In2 (In1 b)
+  | In2 c -> In2 (In2 c)
 
 (*----------------------------------------------------------------------------*
  ### $A \times (B + C) \cong (A \times B) + (A \times C)$
 [*----------------------------------------------------------------------------*)
 
-let phi5 _ = ()
+let phi5 (a, (x : ('b,'c) sum)) = 
+  match (a, x) with
+  | (a, In1 b) -> In1 (a,b)
+  | (a, In2 c) -> In2 (a,c)
 let psi5 _ = ()
 
 (*----------------------------------------------------------------------------*
  ### $A^{B + C} \cong A^B \times A^C$
 [*----------------------------------------------------------------------------*)
 
-let phi6 _ = ()
-let psi6 _ = ()
+let phi6 (f : ('b,'c) sum  -> 'a) = 
+  let f_1 b = f (In1 b) in
+  let f_2 c = f (In2 c) in
+  (f_1,f_2)
+let psi6 ((g,h) : ('b -> 'a) * ('c -> 'a)) =
+  function
+  | In1 b -> g b
+  | In2 c -> h c
 
 (*----------------------------------------------------------------------------*
  ### $(A \times B)^C \cong A^C \times B^C$
 [*----------------------------------------------------------------------------*)
 
-let phi7 _ = ()
-let psi7 _ = ()
+let phi7 (f : ('c -> ('a * 'b))) = 
+  let f_a c = fst (f c) in 
+  let f_b c = snd (f c) in
+  (f_a,f_b)
+let psi7 ((g,h) : ('c -> 'a) * ('c -> 'b)) = 
+  fun c -> (g c, h c)
+  
 
 (*----------------------------------------------------------------------------*
  ## Permutacije
@@ -199,7 +247,9 @@ let permutacija_2 = [3; 9; 1; 7; 5; 4; 6; 8; 2; 0]
  Predpostavite lahko, da sta seznama enakih dolžin.
 [*----------------------------------------------------------------------------*)
 
-let kompozitum _ _ = ()
+let kompozitum p1 p2 =
+  let n = List.length p1 in
+  List.init n (fun i -> List.nth p1 (List.nth p2 i))
 
 let primer_permutacije_1 = kompozitum permutacija_1 permutacija_1
 (* val primer_permutacije_1 : int list = [0; 1; 2; 3; 4; 5] *)
@@ -217,7 +267,11 @@ let primer_permutacije_2 = kompozitum permutacija_2 permutacija_2
  \mathrm{id},$$ kjer je $\mathrm{id}$ indentiteta.
 [*----------------------------------------------------------------------------*)
 
-let inverz _ = ()
+let inverz p = 
+  let n = List.length p in
+  let inverz = Array.make n 0 in
+  List.iteri (fun i v -> inverz.(v) <- i) p ; Array.to_list inverz
+
 
 let primer_permutacije_3 = inverz permutacija_1
 (* val primer_permutacije_3 : int list = [5; 3; 2; 1; 4; 0] *)
@@ -238,7 +292,24 @@ let primer_permutacije_5 = kompozitum permutacija_2 (inverz permutacija_2)
  n-1\}$ naj se pojavi v natanko enem ciklu.
 [*----------------------------------------------------------------------------*)
 
-let cikli _ = ()
+let cikli p =
+  let rec najdi_cikel zacetna = 
+    let rec aux x acc =
+      let y = List.nth p x in 
+      if y = zacetna then List.rev (x :: acc)
+      else aux y (x :: acc)
+    in aux zacetna []
+  in let rec odstrani xi yi =
+    List.filter (fun y -> not (List.mem y xi)) yi in
+  let rec zunaj acc ostali = 
+    match ostali with
+    | [] -> List.rev acc
+    | x :: xi ->
+      let q = najdi_cikel x in
+      zunaj (q :: acc) (odstrani q ostali)
+  in zunaj [] (List.init (List.length p) Fun.id) 
+      
+
 
 let primer_permutacije_6 = cikli permutacija_1
 (* val primer_permutacije_6 : int list list = [[0; 5]; [1; 3]; [2]; [4]] *)
@@ -267,7 +338,22 @@ let primer_permutacije_8 = cikli (inverz permutacija_2)
  ustreza.
 [*----------------------------------------------------------------------------*)
 
-let iz_transpozicij _ _ = ()
+let iz_transpozicij n transpozicije =
+  let range n =
+    let rec aux i acc =
+      if i < 0 then acc else aux (i-1) (i :: acc)
+    in aux (n-1) []
+  in
+  let menjaj sez (i,j) =
+    let rec aux stevilo = function
+    | [] -> []
+    | x :: xi -> 
+      if stevilo = i then (List.nth sez j) :: aux (stevilo + 1) xi
+      else if stevilo = j then (List.nth sez i) :: aux (stevilo + 1) xi
+      else x :: aux (stevilo + 1) xi
+    in aux 0 sez
+  in List.fold_left (fun acc t -> menjaj acc t) (range n) transpozicije
+
 
 let primer_permutacije_9 = iz_transpozicij 4 [(0, 1); (2, 3)]
 (* val primer_permutacije_9 : int list = [1; 0; 3; 2] *)
@@ -284,7 +370,13 @@ let primer_permutacije_9 = iz_transpozicij 4 [(0, 1); (2, 3)]
  i_{k-1})\circ(i_1, i_3)\circ(i_1, i_2).$$
 [*----------------------------------------------------------------------------*)
 
-let v_transpozicije _ = ()
+let v_transpozicije perm =
+  let sezciklov = cikli perm in
+  let cikel_v_transpozicije = function
+    | [] | [_] -> []
+    | i1 :: ostalo ->
+        List.rev_map (fun x -> (i1, x)) ostalo
+  in List.concat_map cikel_v_transpozicije sezciklov
 
 let primer_permutacije_10 = v_transpozicije permutacija_1
 (* val primer_permutacije_10 : (int * int) list = [(0, 5); (1, 3)] *)
@@ -292,6 +384,7 @@ let primer_permutacije_10 = v_transpozicije permutacija_1
 let primer_permutacije_11 = v_transpozicije permutacija_2
 (* val primer_permutacije_11 : (int * int) list =
   [(0, 9); (0, 1); (0, 2); (0, 8); (0, 7); (0, 3); (4, 5)] *)
+  
 
 (*----------------------------------------------------------------------------*
  ## Sudoku
@@ -386,8 +479,10 @@ let primer_resitve : resitev = [|
  funkcija naj te možnosti ne uporablja, temveč naj sestavi in vrne novo tabelo.
 [*----------------------------------------------------------------------------*)
 
-let dodaj _ _ _ _ = ()
-
+let dodaj i j n (m : mreza) : mreza =
+  Array.mapi (fun r vrstica ->
+    if r = i then Array.mapi (fun c stolpec -> if c = j then Some n else stolpec) vrstica
+    else vrstica) m
 let primer_sudoku_1 = primer_mreze |> dodaj 0 8 2
 (* val primer_sudoku_1 : mreza =
   [|[|Some 5; Some 4; None; None; Some 7; None; None; None; Some 2|];
@@ -410,9 +505,39 @@ let primer_sudoku_1 = primer_mreze |> dodaj 0 8 2
  izpis v zgornji obliki.
 [*----------------------------------------------------------------------------*)
 
-let izpis_mreze _ = ""
-
+let izpis_mreze (m : mreza) =
+  let funkcija = (function Some n -> char_of_int (n + int_of_char '0') | None -> '.') in 
+  let prazen_sudoku = ["+-------+-------+-------+\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "+-------+-------+-------+\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "+-------+-------+-------+\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "+-------+-------+-------+"] in
+   String.concat "" (List.mapi (fun i vrstica -> 
+    if i mod 4 <> 0 then 
+      String.mapi (fun j crka -> if j mod 2 = 0 && crka = '.' then 
+        let k =
+          if i < 4 then i - 1
+          else if i < 8 then i - 2
+          else i - 3
+        in let h =
+          if j < 8 then j / 2 - 1
+          else if j < 16 then j / 2 - 2
+          else j / 2 - 3
+        in funkcija m.(k).(h)
+        else crka)
+      vrstica
+  else vrstica) prazen_sudoku)
+  
 let primer_sudoku_2 = primer_mreze |> izpis_mreze |> print_endline
+
 (* 
   +-------+-------+-------+
   | 5 4 . | . 7 . | . . . |
@@ -431,7 +556,37 @@ let primer_sudoku_2 = primer_mreze |> izpis_mreze |> print_endline
   val primer_sudoku_2 : unit = ()
 *)
 
-let izpis_resitve _ = ""
+let izpis_resitve (r : resitev) = 
+  let prazen_sudoku = 
+  ["+-------+-------+-------+\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "+-------+-------+-------+\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "+-------+-------+-------+\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "| . . . | . . . | . . . |\n";
+  "+-------+-------+-------+"] in
+  String.concat "" (List.mapi (fun i vrstica -> 
+    if i mod 4 <> 0 then 
+      String.mapi (fun j crka -> if j mod 2 = 0 && crka = '.' then 
+        let k =
+          if i < 4 then i - 1
+          else if i < 8 then i - 2
+          else i - 3
+        in let h =
+          if j < 8 then j / 2 - 1
+          else if j < 16 then j / 2 - 2
+          else j / 2 - 3
+        in char_of_int ((Array.get (Array.get r k) h) + int_of_char '0')
+        else crka)
+      vrstica
+  else vrstica) prazen_sudoku)
+
 
 let primer_sudoku_3 = primer_resitve |> izpis_resitve |> print_endline
 (*
@@ -462,7 +617,21 @@ let primer_sudoku_3 = primer_resitve |> izpis_resitve |> print_endline
  mreži podana številka, v rešitvi nahaja enaka številka.
 [*----------------------------------------------------------------------------*)
 
-let ustreza _ _ = ()
+let ustreza (m : mreza) (r : resitev) =
+  let rec preveri_vrstico i j =
+    if j = 9 then true
+    else match m.(i).(j) with
+      | None -> preveri_vrstico i (j + 1)
+      | Some n ->(
+          if r.(i).(j) = n then preveri_vrstico i (j + 1)
+          else false)
+  in let rec preveri_mrezo i =
+    if i = 9 then true
+    else if preveri_vrstico i 0 then preveri_mrezo (i + 1)
+    else false
+  in preveri_mrezo 0
+
+    
 
 let primer_sudoku_4 = ustreza primer_mreze primer_resitve
 (* val primer_sudoku_4 : bool = true *)
@@ -495,7 +664,17 @@ let primer_sudoku_4 = ustreza primer_mreze primer_resitve
  ```
 [*----------------------------------------------------------------------------*)
 
-let ni_v_vrstici _ _  = ()
+let ni_v_vrstici ((m : mreza), i) (n : int)  = 
+  let vrstica = m.(i) in 
+  let rec preveri_vrstico j =
+    if j = 9 then true
+    else match vrstica.(j) with
+      | None -> preveri_vrstico (j + 1)
+      | Some a ->(
+          if vrstica.(j) = (Some n) then false
+          else preveri_vrstico (j + 1))
+  in preveri_vrstico 0
+
 
 let primer_sudoku_5 = ni_v_vrstici (primer_mreze, 0) 1
 (* val primer_sudoku_5 : bool = true *)
@@ -503,9 +682,49 @@ let primer_sudoku_5 = ni_v_vrstici (primer_mreze, 0) 1
 let primer_sudoku_6 = ni_v_vrstici (primer_mreze, 1) 1
 (* val primer_sudoku_6 : bool = false *)
 
-let ni_v_stolpci _ _  = ()
+let ni_v_stolpcu ((m : mreza), j) (n : int)  =
+  let rec preveri_vrstico i =
+    if i = 9 then true
+    else match m.(i).(j) with
+      | None -> preveri_vrstico (i + 1)
+      | Some a ->(
+          if m.(i).(j) = (Some n) then false
+          else preveri_vrstico (i + 1))
+  in preveri_vrstico 0
 
-let ni_v_skatli _ _  = ()
+let ni_v_skatli ((m : mreza), j) (n : int) = 
+  let min1 =
+    if j < 3 then 0
+    else if j < 6 then 3
+    else 6
+  in
+  let min2 =
+    if j = 0 || j = 3 || j = 6 then 0
+    else if j = 1 || j = 4 || j = 7 then 3
+    else 6
+  in
+  let max1 =
+    if j < 3 then 3
+    else if j < 6 then 6
+    else 9
+  in
+  let max2 =
+    if j = 0 || j = 3 || j = 6 then 3
+    else if j = 1 || j = 4 || j = 7 then 6
+    else 9
+  in
+  let rec preveri_vrstico k h = 
+    if h = max2 then true
+    else match m.(k).(h) with
+      | None -> preveri_vrstico k (h + 1)
+      | Some x -> 
+        if m.(k).(h) = (Some n) then false
+        else preveri_vrstico k (h + 1)
+  in let rec preveri_skatlo k =
+    if k = max1 then true
+    else if preveri_vrstico k min2 then preveri_skatlo (k + 1)
+    else false
+  in preveri_skatlo min1
 
 (*----------------------------------------------------------------------------*
  Napišite funkcijo `kandidati : mreza -> int -> int -> int list option`, ki
@@ -514,7 +733,25 @@ let ni_v_skatli _ _  = ()
  funkcija vrne `None`.
 [*----------------------------------------------------------------------------*)
 
-let kandidati _ _ _ = ()
+let kandidati (m : mreza) i j =
+  let skatla =
+    if i < 3 && j < 3 then 0
+    else if i < 3 && j < 6 then 1
+    else if i < 3 && j < 9 then 2
+    else if i < 6 && j < 3 then 3
+    else if i < 6 && j < 6 then 4
+    else if i < 6 && j < 9 then 5
+    else if i < 9 && j < 3 then 6
+    else if i < 9 && j < 6 then 7
+    else 8
+  in
+  if m.(i).(j) <> None then None
+  else let rec stevilke k acc =
+    if k = 10 then acc
+    else if ni_v_vrstici (m, i) k && ni_v_stolpcu (m, j) k && ni_v_skatli (m, skatla) k then stevilke (k + 1) (k :: acc)
+    else stevilke (k + 1) acc
+  in
+  Some (List.rev (stevilke 1 []))
 
 let primer_sudoku_7 = kandidati primer_mreze 0 2
 (* val primer_sudoku_7 : int list option = Some [1; 2; 3] *)
@@ -537,7 +774,28 @@ let primer_sudoku_8 = kandidati primer_mreze 0 0
  možnosti.*
 [*----------------------------------------------------------------------------*)
 
-let rec resi _ = ()
+let rec resi (m : mreza) : resitev option = 
+  let rec najdi_prazno i j =
+    if i = 9 then None
+    else if j = 9 then najdi_prazno (i+1) 0
+    else match m.(i).(j) with
+      | None -> Some (i,j)
+      | Some _ -> najdi_prazno i (j+1)
+  in match najdi_prazno 0 0 with
+  | None -> Some (Array.map (Array.map (function Some n -> n | None ->  0)) m)
+  | Some (i,j) -> match kandidati m i j with
+    | None -> None
+    | Some moznosti ->
+      let rec preizkusi = function
+        | [] -> None
+        | a :: aji -> let nova_mreza = Array.mapi (fun x vrstica ->
+          if x = i then Array.mapi (fun y celica -> if y = j then Some a else celica) vrstica
+          else vrstica) m in 
+          match resi nova_mreza with
+          | Some resitev -> Some resitev
+          | None -> preizkusi aji
+      in preizkusi moznosti
+
 
 let primer_sudoku_9 = resi primer_mreze
 (* val primer_sudoku_9 : resitev option =
